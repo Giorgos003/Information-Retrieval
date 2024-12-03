@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Justinian</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+            text-align: center;
+            margin-top: 150px;
+        }
+
+        .logo {
+            font-size: 72px;
+            font-weight: bold;
+            color: #4285f4;
+        }
+
+        .search-bar {
+            margin-top: 20px;
+            width: 50%;
+            height: 30px;
+            padding-left: 10px;
+            font-size: 16px;
+            border-radius: 25px;
+            border: 1px solid #dcdcdc;
+            outline: none;
+        }
+
+        .search-bar:focus {
+            border-color: #4285f4;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .footer a {
+            color: #888;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="logo">Justinian</div>
+
+    <input class="search-bar" type="text" id="searchInput" placeholder="Search Justinian..." onkeydown="checkEnter(event)">
+
+    <div class="footer">
+        <p>© 2024 Justinian</p>
+        <p>
+            <a href="#">About Justinian</a> |
+            <a href="#">Privacy</a> |
+            <a href="#">Terms</a>
+        </p>
+    </div>
+
+    <script>
+        function checkEnter(event) {
+            if (event.key === 'Enter') {
+                submitSearch();
+            }
+        }
+
+        function submitSearch() {
+            // Get the value from the search input
+            const searchData = document.getElementById("searchInput").value.trim();
+
+            if (searchData !== "") {
+                // Send the data to the Python script using Fetch API
+                fetch("save_search_data.py", {
+                    method: "do_POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ search_query: searchData })
+                })
+                .then(response => response.text())
+                .then(data => {
+                    console.log("Search query saved: " + data);
+                    // Clear the search bar after submission
+                    document.getElementById("searchInput").value = "";
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                });
+            }
+        }
+    </script>
+
+</body>
+</html>
+
+
