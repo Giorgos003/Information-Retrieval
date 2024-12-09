@@ -153,6 +153,17 @@ class InvertedIndex:
         return None
 
 
+    def print_index_to_file(self, output_file):
+        """
+        Print the inverted index to a text file.
+        :param output_file: Path to the output text file.
+        """
+        with open(output_file, 'w', encoding='utf-8') as f:
+            for term, doc_data in self.index.items():
+                # Format: term -> {doc_id: term_freq}
+                f.write(f"{term} -> {dict(doc_data)}\n")
+
+
 # Example Usage
 if __name__ == "__main__":
     # Initialize the InvertedIndex class
@@ -179,5 +190,9 @@ if __name__ == "__main__":
         print(f"Term Frequencies: {result}")
     else:
         print("Term not found in index.")
+
+    # Print the inverted index to a file
+    inverted_index.print_index_to_file("inverted_index_output.txt")
+
 
 
