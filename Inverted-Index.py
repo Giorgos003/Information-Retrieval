@@ -3,6 +3,8 @@ import heapq
 import tempfile
 from collections import defaultdict
 import pickle
+from nltk.stem.snowball import SnowballStemmer
+from greek_stemmer import GreekStemmer
 
 
 class InvertedIndex:
@@ -22,11 +24,19 @@ class InvertedIndex:
         :param word: The word to be stemmed.
         :return: The stemmed word.
         """
-        suffixes = ['ες', 'η', 'οι', 'ο', 'ους', 'ου', 'ια', 'ι', 'ισ', 'ας', 'ή', 'ύ', 'ω']
+        suffixes = ['ος', 'ης', 'ες', 'η', 'οι', 'ο', 'ους', 'ου', 'ια', 'ι', 'ισ', 'ας', 'ή', 'ύ', 'ω', 'ς']
         for suffix in suffixes:
             if word.endswith(suffix):
                 return word[:-len(suffix)]  # Strip the suffix
         return word  # Return the original word if no suffix matched
+    
+    def complete_stemmer(self,word):
+        print(f"word before {word}")
+        stemmer = SnowballStemmer('spanish')
+        stemmed_word = stemmer.stem(word)
+        print(f"word after {stemmed_word}")
+
+        return stemmed_word
 
     def _write_temp_file(self, term_doc_pairs):
         """
@@ -52,6 +62,7 @@ class InvertedIndex:
                 terms = line.strip().split()  # Tokenize the line into terms
                 term_freqs = defaultdict(int)
 
+                # print(doc_id)
                 # Count the frequency of each term in the document
                 for term in terms:
                     stemmed_term = self.basic_stemmer(term)  # Stem each term
@@ -181,11 +192,15 @@ if __name__ == "__main__":
     # Save the index
     inverted_index.save_index("inverted_index.pkl")
 
+    import sys
+    sys.exit()
+
     # Load the index
     inverted_index.load_index("inverted_index.pkl")
 
     # Search for terms
-    result = inverted_index.search("βουλευτης")  # Replace with a term to search
+    stemmed_word = inverted_index.basic_stemmer("Βουλευτής")
+    result = inverted_index.search(stemmed_word)  # Replace with a term to search
     if result:
         print(f"Term Frequencies: {result}")
     else:

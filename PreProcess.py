@@ -1,3 +1,4 @@
+import random
 import pandas as pd
 from pathlib import Path
 import unicodedata
@@ -8,9 +9,18 @@ import string
 
 script_dir = Path(__file__).resolve().parent
 
-document_dir = script_dir / 'Greek_Parliament_Proceedings_1989_2020_DataSample.csv'
+document_dir = script_dir / 'Greek_Parliament_Proceedings_1989_2020.csv'
 
-df = pd.read_csv(document_dir)
+reader = pd.read_csv(document_dir, chunksize=10000)
+
+last_chunk = None
+for i, df_chunk in enumerate(reader):
+    last_chunk = df_chunk
+    print(i)
+    if i == 10:
+        break
+
+df = last_chunk
 
 # filter unwanted columns
 df.drop(columns=["parliamentary_period", "parliamentary_session", "parliamentary_sitting"], inplace=True)
@@ -37,15 +47,29 @@ def remove_accents(text):
 
 # Preprocessing every document (lowercase, tone and punctuation removal)
 docs = []
-allowed_punct = '/'
+allowed_punct = "/"
 
 for index, row in df.iterrows():
     whole_row = ' '.join(map(str, row.values))
 
     text = whole_row.lower()
     text = remove_accents(text)
-    text = ''.join(char if char not in string.punctuation or char == allowed_punct else " " for char in text)
-    text = text.replace("\u00AB", "").replace("\u00BB", "").replace("\u0384", "").replace("\u2019", "")
+
+    # This code removes unwanted characters
+    # ######################################
+    # text = ''.join(char if char not in string.punctuation or char == allowed_punct else " " for char in text)
+    # # Replace some weird greek punctuations
+    # text = text.replace("\u00AB", "").replace("\u00BB", "").replace("\u0384", "").replace("\u2019", "").replace("\u00BE","").replace("\u2215","")
+
+    # This code specifies which caracters to keep
+    # text = text.replace("/", "-")
+    text = text.replace("\xba", "").replace("\xbb", "").replace("\xbc", "").replace("\xbd", "").replace("\xbe", "").replace("\u0456", "")
+    text = ''.join(char if (char.isalnum() or char in string.ascii_lowercase + string.ascii_uppercase 
+                            or char in 'αβγδεζηθικλμνξοπρστυφχψω'  # Greek lowercase letters
+                            or char in 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ'  # Greek uppercase letters
+                            or char == allowed_punct) else " " 
+                   for char in text)
+
 
     docs.append(text)
 
