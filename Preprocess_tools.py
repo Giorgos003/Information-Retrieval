@@ -1,8 +1,9 @@
-import random
+import math
 import pandas as pd
-from pathlib import Path
 import unicodedata
 import string
+from nltk.stem.snowball import SnowballStemmer
+from greek_stemmer import GreekStemmer
 
 def remove_accents(text):
     # Normalize the string to NFD (Normalization Form Decomposed)
@@ -27,13 +28,17 @@ def filter_dataframe(df):
 def df_preprocess(df)->list:
     # Preprocessing every document (lowercase, tone and punctuation removal)
     docs = []
+    ids = []
     allowed_punct = "/"
 
     for index, row in df.iterrows():
+        ids.append(index)
+
+        # Turning the values of the df into a whole string
         whole_row = ' '.join(map(str, row.values))
 
-        text = whole_row.lower()
-        text = remove_accents(text)
+        # Preprocess that string
+        text = document_preprocess(whole_row)
 
         # This code removes unwanted characters
         # ######################################
@@ -43,14 +48,46 @@ def df_preprocess(df)->list:
 
         # This code specifies which caracters to keep
         # text = text.replace("/", "-")
-        text = text.replace("\xba", "").replace("\xbb", "").replace("\xbc", "").replace("\xbd", "").replace("\xbe", "").replace("\u0456", "")
-        text = ''.join(char if (char.isalnum() or char in string.ascii_lowercase + string.ascii_uppercase 
-                                or char in 'αβγδεζηθικλμνξοπρστυφχψω'  # Greek lowercase letters
-                                or char in 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ'  # Greek uppercase letters
-                                or char == allowed_punct) else " " 
-                    for char in text)
+        
 
 
         docs.append(text)
 
-    return docs
+    return ids, docs
+
+def document_preprocess(doc):
+    allowed_punct = '/'    
+
+    text = doc.lower()
+    text = remove_accents(text)
+
+    text = text.replace("\xba", "").replace("\xbb", "").replace("\xbc", "").replace("\xbd", "").replace("\xbe", "").replace("\u0456", "")
+    text = ''.join(char if (char.isalnum() or char in string.ascii_lowercase + string.ascii_uppercase 
+                            or char in 'αβγδεζηθικλμνξοπρστυφχψω'  # Greek lowercase letters
+                            or char in 'ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ'  # Greek uppercase letters
+                            or char == allowed_punct) else " " 
+                for char in text)
+    
+    return text
+
+def basic_stemmer(word):
+        """
+        Perform basic stemming on a Greek word by stripping common suffixes.
+        :param word: The word to be stemmed.
+        :return: The stemmed word.
+        """
+        suffixes = ['ος', 'ης', 'ες', 'οι', 'ο', 'ους', 'ου', 'ια', 'ι', 'ισ', 'ας', 'ή', 'η', 'ύ', 'ω', 'ς' , 'ων']
+        for suffix in suffixes:
+            if word.endswith(suffix):
+                return word[:-len(suffix)]  # Strip the suffix
+        return word  # Return the original word if no suffix matched
+
+def complete_stemmer(word):
+    # nlp = spacy.load("el_core_news_sm", disable=['parser', 'ner', 'tok2vec', 'tagger', 'attribute_ruler', 'lemmatizer'])
+    pass
+
+def TF(freq):
+    return 1 + math.log(freq)
+
+def IDF(n, N):
+    return math.log(1 + N/n)
