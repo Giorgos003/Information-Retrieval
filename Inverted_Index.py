@@ -146,12 +146,9 @@ class InvertedIndex:
 
 
 
-    def search_query(self, query:str)->list:
+    def search_query(self, query:str, k:int=10)->list:
         start = []
         end = []
-        snippet_start = []
-        snippet_end = []
-        start_func = time.time()
 
 
         # Preprocess it 
@@ -182,6 +179,32 @@ class InvertedIndex:
 
         query_set = set(query_terms)
 
+        # Filter terms with low idf values
+        threshold = 2
+
+        max_idf = 0
+        max_term = None
+
+        temp_set = query_set.copy()
+        for term in query_set:
+            idf = tools.IDF(len(self.index[term]) , self.num_of_docs)
+
+            if idf > max_idf:
+                max_idf = idf
+                max_term = term
+
+            if idf < threshold:
+                temp_set.remove(term)
+
+        # Handle queries with only stopwords
+        if not temp_set:
+            temp_set.add(max_term)
+
+        query_set = temp_set
+        
+
+        print(f"query set reduced to {query_set}")
+
 
         
 
@@ -191,6 +214,7 @@ class InvertedIndex:
             # print(f"term {term} with {len(self.index[term])}, {self.index[term]}")
             tf = tools.TF(self.index[term][query_id])
             idf = tools.IDF(len(self.index[term]) , self.num_of_docs)
+            print(f"term:{term} idf:{idf}")
             
             
             l2_query += (tf*idf)**2
@@ -214,106 +238,95 @@ class InvertedIndex:
         print(f"related docs = {len(doc_set)}")
         end.append(time.time())
         
-        # Retrieve related docs
-        start.append(time.time())
+
+
+
+        # Retrieve related docs in chunks
+        max_heap = []
+        doc_list = list(doc_set)
 
         conn = sqlite3.connect("data.db")
         cursor = conn.cursor()
 
-        placeholders = ', '.join(['?'] * len(doc_set))
-        sql_query = f"SELECT DISTINCT * FROM unfiltered_records WHERE id IN ({placeholders})"
-        cursor.execute(sql_query, list(doc_set))
+        chunk_size = 1000
+        for i in range(0 , len(doc_list) , chunk_size):
+            chunk = doc_list[i : i+chunk_size]
 
-        # TO_DO: optionally delete doc_set
-        results = cursor.fetchall()
+            placeholders = ', '.join(['?'] * len(chunk))
+            sql_query = f"SELECT DISTINCT * FROM unfiltered_records WHERE id IN ({placeholders})"
+            cursor.execute(sql_query, list(chunk))
+
+            # TO_DO: optionally delete doc_set
+            results = cursor.fetchall()
+
+            
+
+
+            # Rank related docs
+    
+            for record in results:
+        
+
+                id = record[0]
+                broken_down = record[1:]
+
+                whole_row = ' '.join(map(str, broken_down))
+                text = tools.document_preprocess(whole_row)
+                terms = text.strip().split()
+
+                
+
+                unique_terms = set()
+                for term in terms:
+                    unique_terms.add(tools.basic_stemmer(term))
+                
+                l2_doc = 0
+                for term in unique_terms:
+                    try:
+                        tf = tools.TF(self.index[term][id])
+                        idf = tools.IDF(len(self.index[term]) , self.num_of_docs)
+                    except:
+                        continue
+                    
+                    l2_doc += (tf*idf)**2
+
+          
+
+                common_terms = unique_terms.intersection(query_set)
+                
+                internal_product = 0
+                for term in common_terms:
+                    # IDF should be common for the same term
+                    idf = tools.IDF(len(self.index[term]) , self.num_of_docs)
+
+                    tf = tools.TF(self.index[term][query_id])
+                    w_query = tf * idf
+
+                    tf = tools.TF(self.index[term][id])
+                    w_doc = tf * idf
+
+                    internal_product += w_query * w_doc
+
+                score = internal_product/(l2_doc*l2_query)
+
+                heapq.heappush(max_heap, (-score,id))
+
+
+            
+
 
         conn.close()
 
-        end.append(time.time())
+
+        for i in range(min(k, len(max_heap))):
+                score, id = heapq.heappop(max_heap)
+                print(f"{i+1}: doc {id} with score {-score}")
 
 
 
 
-
-        
-
-        # Rank related docs
-        start.append(time.time())
-
-        max_heap = []
-        for record in results:
-            snippet_start.append(time.time())
-
-            id = record[0]
-            broken_down = record[1:]
-
-            whole_row = ' '.join(map(str, broken_down))
-            text = tools.document_preprocess(whole_row)
-            terms = text.strip().split()
-
-            snippet_end.append(time.time())
-
-            snippet_start.append(time.time())
-
-            unique_terms = set()
-            for term in terms:
-                unique_terms.add(tools.basic_stemmer(term))
-            
-            l2_doc = 0
-            for term in unique_terms:
-                try:
-                    tf = tools.TF(self.index[term][id])
-                    idf = tools.IDF(len(self.index[term]) , self.num_of_docs)
-                except:
-                    continue
-                
-                l2_doc += (tf*idf)**2
-
-            snippet_end.append(time.time())
-
-
-
-            snippet_start.append(time.time())
-
-            common_terms = unique_terms.intersection(query_set)
-            
-            internal_product = 0
-            for term in common_terms:
-                # IDF should be common for the same term
-                idf = tools.IDF(len(self.index[term]) , self.num_of_docs)
-
-                tf = tools.TF(self.index[term][query_id])
-                w_query = tf * idf
-
-                tf = tools.TF(self.index[term][id])
-                w_doc = tf * idf
-
-                internal_product += w_query * w_doc
-
-            score = internal_product/(l2_doc*l2_query)
-
-            heapq.heappush(max_heap, (-score,id))
-
-            snippet_end.append(time.time())
-            
-        end.append(time.time())
-
-        for i in range(10):
-            score, id = heapq.heappop(max_heap)
-            print(f"{i+1}: doc {id} with score {-score}")
-
-        
-
-        end_func = time.time()
-
-
-        for i in range(len(start)):
-            print(f"snippet {i} took {(end[i] - start[i]) / (end_func-start_func) * 100}% of query time")
-        
-        # for i in range(len(snippet_end)):
-        #     print(f"snippet 5.{i} took {(snippet_end[i] - snippet_start[i]) / (end[5]-start[5]) * 100}% of snippet 5 time")
-
-
+          
+       
             
 
         
