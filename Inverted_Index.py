@@ -253,7 +253,7 @@ class InvertedIndex:
             chunk = doc_list[i : i+chunk_size]
 
             placeholders = ', '.join(['?'] * len(chunk))
-            sql_query = f"SELECT DISTINCT * FROM unfiltered_records WHERE id IN ({placeholders})"
+            sql_query = f"SELECT * FROM unfiltered_records WHERE id IN ({placeholders})"
             cursor.execute(sql_query, list(chunk))
 
             # TO_DO: optionally delete doc_set
@@ -317,7 +317,7 @@ class InvertedIndex:
 
         conn.close()
 
-
+        return max_heap
         for i in range(min(k, len(max_heap))):
                 score, id = heapq.heappop(max_heap)
                 print(f"{i+1}: doc {id} with score {-score}")
