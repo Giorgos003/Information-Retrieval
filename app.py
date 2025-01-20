@@ -40,19 +40,29 @@ def get_records(query):
     input_file = "Greek_Parliament_Proceedings_1989_2020.csv"
 
     # Initialize the InvertedIndex class
-    inverted_index = InvertedIndex()
-
     print(f"started loading catalog")
-    inverted_index.load_index("inverted_index.pkl")
-    inverted_index.num_of_docs = 706801 
+    import time
+    start = time.time()
 
+    inverted_index = InvertedIndex().load_index("inverted_index.pkl")
+    end = time.time()
+    print(f"loaded in {end-start:.1f}")
+
+
+
+
+    start = time.time()
     heap_ids = inverted_index.search_query(query)
 
+    ranked = [item[0] for item in heap_ids]
 
-    ranked = []
-    for i in range(min(20, len(heap_ids))):
-        score, id = heapq.heappop(heap_ids)
-        ranked.append(id)
+    end = time.time()
+    print(f"results found in {end-start} seconds")
+
+    # ranked = []
+    # for i in range(min(20, len(heap_ids))):
+    #     score, id = heapq.heappop(heap_ids)
+    #     ranked.append(id)
         
 
     # Open a connection to the SQLite database

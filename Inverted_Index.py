@@ -19,10 +19,12 @@ class InvertedIndex:
         Initialize the inverted index.
         :param temp_dir: Directory to store temporary files. Defaults to system temp directory.
         """
-        self.temp_dir = temp_dir or tempfile.gettempdir()
-        self.temp_files = []
+        # self.temp_dir = temp_dir or tempfile.gettempdir()
+        # self.temp_files = []
+
         # In-memory index: stores term -> {'doc_ids': {doc_id: term_freq}}
         self.index = defaultdict(dict)
+        self.lengths = defaultdict()
         self.num_of_docs = 0
 
 
@@ -116,14 +118,18 @@ class InvertedIndex:
             self.num_of_docs += len(doc_ids)
 
 
-            for j , record in enumerate(preprocessed_list):
+            for id, record in zip(doc_ids, preprocessed_list):
                 # Tokenize record
-                terms = record.strip().split()
-
+                terms = tools.stopword_removal(record.strip().split())
+                
+                unique_terms = set()
                 for term in terms:
                     stemmed_word = tools.basic_stemmer(term)
+                    unique_terms.add(stemmed_word)
 
-                    self.update_catalog(stemmed_word, doc_ids[j])
+                    self.update_catalog(stemmed_word, id)
+
+                self.lengths[id] = len(unique_terms)
 
         if create_db:
             try: conn.close()
@@ -147,32 +153,23 @@ class InvertedIndex:
 
 
     def search_query(self, query:str, k:int=10)->list:
-        start = []
-        end = []
-
-
-        # Preprocess it 
-        start.append(time.time())
+        # Preprocess query 
         preprocessed_query = tools.document_preprocess(query)
-        end.append(time.time())
 
-        # Tokenize query
-        start.append(time.time())
-        terms = preprocessed_query.strip().split()
-        end.append(time.time())
+        # Tokenize query and remove stopwords
+        query_terms = tools.stopword_removal(preprocessed_query.strip().split())
 
-        # Update catalog and precompute useful values
-        start.append(time.time())
-        query_text = tools.document_preprocess(query)
-        query_terms = query_text.strip().split()
-        self.num_of_docs += 1
-        query_id = self.num_of_docs
-
+        # Stem the query
         temp = []
         for term in query_terms:
             temp.append(tools.basic_stemmer(term))
         query_terms = temp
 
+        # Update catalog and precompute useful values
+        self.num_of_docs += 1
+        query_id = self.num_of_docs     
+
+        # MAYBE OPTIONAL
         for term in query_terms:
             self.update_catalog(term, query_id)
 
@@ -180,7 +177,7 @@ class InvertedIndex:
         query_set = set(query_terms)
 
         # Filter terms with low idf values
-        threshold = 2
+        threshold = tools.IDF(n=self.num_of_docs/2 , N=self.num_of_docs)
 
         max_idf = 0
         max_term = None
@@ -196,7 +193,7 @@ class InvertedIndex:
             if idf < threshold:
                 temp_set.remove(term)
 
-        # Handle queries with only stopwords
+        # Handle queries with only frequent terms
         if not temp_set:
             temp_set.add(max_term)
 
@@ -204,6 +201,50 @@ class InvertedIndex:
         
 
         print(f"query set reduced to {query_set}")
+        
+        q_terms_idfs = []
+        for term in query_set:
+            idf = tools.IDF(n=len(self.index[term]) , N=self.num_of_docs)
+            print(f"{(idf,term)}")
+            q_terms_idfs.append((idf,term))
+
+        
+        q_terms_idfs = sorted(q_terms_idfs, reverse=True)
+        accumulators = defaultdict()
+
+        for idf, term in q_terms_idfs:
+            for doc_id, freq in self.index[term].items():
+                score = tools.TF(freq) * idf / self.lengths[doc_id]
+                accumulators[doc_id] = accumulators.get(doc_id, 0) + score
+
+        top_k_items = sorted(accumulators.items(), key=lambda item: item[1], reverse=True)[:k]
+
+        
+        return top_k_items
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         
@@ -218,11 +259,8 @@ class InvertedIndex:
             
             
             l2_query += (tf*idf)**2
-        end.append(time.time())
 
         # Find related docs
-        start.append(time.time())
-
         doc_set = set()
         for term in terms:
             stemmed_term = tools.basic_stemmer(term)
@@ -236,7 +274,6 @@ class InvertedIndex:
                 doc_set = doc_set.union(temp_set)
 
         print(f"related docs = {len(doc_set)}")
-        end.append(time.time())
         
 
 
@@ -274,11 +311,9 @@ class InvertedIndex:
                 text = tools.document_preprocess(whole_row)
                 terms = text.strip().split()
 
-                
+                refined_terms = tools.stopword_removal(terms)
 
-                unique_terms = set()
-                for term in terms:
-                    unique_terms.add(tools.basic_stemmer(term))
+                unique_terms = {tools.basic_stemmer(term) for term in refined_terms}
                 
                 l2_doc = 0
                 for term in unique_terms:
@@ -462,7 +497,7 @@ class InvertedIndex:
         """
         try:
             with open(file_path, 'wb') as f:
-                pickle.dump(self.index, f)
+                pickle.dump(self, f)
         except:
             print('error saving the index to pickle form')
 
@@ -472,7 +507,9 @@ class InvertedIndex:
         :param file_path: Path to load the index.
         """
         with open(file_path, 'rb') as f:
-            self.index = pickle.load(f)
+            obj = pickle.load(f)
+        
+        return obj
 
     def search(self, term):
         pass
