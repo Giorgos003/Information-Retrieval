@@ -1,4 +1,3 @@
-import heapq
 from flask import Flask, render_template, request, jsonify
 import sqlite3
 from Inverted_Index import InvertedIndex
@@ -52,17 +51,12 @@ def get_records(query):
 
 
     start = time.time()
-    heap_ids = inverted_index.search_query(query)
+    heap_ids = inverted_index.search_query(query, 20)
 
     ranked = [item[0] for item in heap_ids]
 
     end = time.time()
     print(f"results found in {end-start} seconds")
-
-    # ranked = []
-    # for i in range(min(20, len(heap_ids))):
-    #     score, id = heapq.heappop(heap_ids)
-    #     ranked.append(id)
         
 
     # Open a connection to the SQLite database
