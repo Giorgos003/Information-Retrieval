@@ -239,16 +239,6 @@ def lsa():
     print(f"U shape: {U.shape}, Sigma shape: {Sigma.shape}, Vt shape: {Vt.shape}")
 
 
-    # Compute retained variance correctly
-    total_energy = np.sum(Sigma ** 2)  # Sum of all singular values squared
-    explained_energy = np.sum(Sigma[:k] ** 2)  # Energy retained in first k components
-    explained_variance = explained_energy / total_energy  # Retained information
-    info_lost = 1 - explained_variance  # Information lost
-
-    print(f"Explained Variance (Retained Information): {explained_variance:.4f}")
-    print(f"Information Loss: {info_lost:.4f}")
-
-
     # Save results
     np.savez("svd_results.npz", U=U, Sigma=Sigma, Vt=Vt)
     print("SVD results saved successfully!")
