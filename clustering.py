@@ -5,7 +5,15 @@ from sklearn.preprocessing import normalize
 
 
 def clustering():
+    """
+    This function performs document clustering on a set of documents represented by their vectors in a reduced latent
+    semantic space, using the Mini-Batch K-Means algorithm with cosine similarity. The goal of this function
+    is to group documents into clusters based on their semantic similarity.
 
+    At the end, it prints the clusters of each document
+
+    :return: nothing
+    """
     # For start, we read the json file that we made tha mapping with the document IDs
     with open("doc_id_mapping.json", "r") as f:
         doc_id_to_index = json.load(f)
@@ -26,6 +34,8 @@ def clustering():
 
 
 
+
+
     # We load the U matrix from the SVD.
     # As you can see in our SVD implementation kn LSA.py, we save the matrices U, Σ and V^T in the svd_results.npz file/
 
@@ -33,7 +43,8 @@ def clustering():
     U = svd_data["U"]  # each row is a document vector
     print("Matrix U has been loaded")
 
-    print(U[:5])
+
+
 
 
     # For the clustering, with decided to use a quicker version of K-means, in combination with cosine similarity
@@ -43,6 +54,8 @@ def clustering():
     # Normalize U matrix to unit vectors
     # This ensures cosine similarity can be approximated by Euclidean distance
     U = normalize(U, norm='l2', axis=1)  # Normalize rows to have unit length
+
+
 
 
     # Use Mini-Batch K-Means
@@ -56,8 +69,11 @@ def clustering():
 
 
 
+
+
     # We want to print the cluster that each document was placed, but we want to print its actual ID. That's why we
     # use our reversed map that we constructed in the start.
+    # There are total of 700,000, of course we can't print them all. We print the 1,000 first
     for i in range(1000):
         print("Document with ID: ", index_to_doc_id[i], "goes on cluster: ", labels[i])
 
