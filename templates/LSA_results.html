@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LSA</title>
+</head>
+<body>
+
+    <h1>Latent Semantic Analysis in Greek Parliament Documents</h1>
+
+    <p>After the preprocessing of the data-documents, there were left ~700,000 documents.<br><br>
+        So we read the inverted index to get all the terms and the documents<br>
+    We found ~440,000 terms, and we used COO format to build the term-to-doc matrix<br><br>
+
+    We used the TruncatedSVD function of the sklearn library to run SVD. <br>
+
+    We reduced the ~440,000 of the data 300, 400, 500 and 800 dimensions. We tried to use the total 'energy' of the concept and keep those that retain the 90% of the information. However, this was practically impossible as it took 5 hours to make<br>
+
+    So we run the algorithm for:<br>
+    (1) 300 dimensions: it takes approximately 5-8 minutes and retains the ~50% of the information<br>
+    (2) 400 dimensions: it takes approximately ~12 minutes and retains the ~53% of the information<br>
+    (3) 500 dimensions: it takes approximately 15 - 20 minutes and retains the ~55% of the information<br>
+    (4) 600 dimensions: it takes approximately ~25 minutes and retains the ~60% of the information<br>
+    (5) 800 dimensions: it takes approximately ~30 minutes and retains the ~66% of the information<br>
+    </p>
+
+    <a href="/">Back to Search Results</a>
+
+</body>
+</html>

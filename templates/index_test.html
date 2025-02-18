@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+
+        th, td {
+            padding: 2px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .text-preview {
+            width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Add style for the new button to make sure it's visible */
+        button {
+            padding: 10px 15px;
+            margin: 10px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Search Database</h1>
+    <input type="text" id="search-bar" placeholder="Enter your search" onkeydown="checkEnter(event)">
+    <button onclick="submitQuery()">Search</button>
+
+    <!-- New button that should now be visible and functional -->
+    <button onclick="window.location.href='/LSA_results.html'">Go to LSA description</button>
+
+    <div id="results"></div>
+
+    <script>
+        function checkEnter(event) {
+            if (event.keyCode === 13) {
+                submitQuery();
+            }
+        }
+
+        function submitQuery() {
+            const query = document.getElementById('search-bar').value;
+            if (!query) {
+                alert('Please enter a search query!');
+                return;
+            }
+
+            fetch(`/search?query=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    displayResults(data);
+                })
+                .catch(error => {
+                    alert('Error: ' + error);
+                });
+        }
+
+        function displayResults(data) {
+            const resultDiv = document.getElementById('results');
+            resultDiv.innerHTML = '';
+
+            if (data.error) {
+                resultDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+            } else if (data.length > 0) {
+                const table = document.createElement('table');
+                table.setAttribute('border', '1');
+
+                const header = table.createTHead();
+                const headerRow = header.insertRow();
+                const columns = ["id", "member_name", "sitting_date", "political_party", "government", "member_region", "roles", "member_gender", "speech"];
+                columns.forEach(col => {
+                    const cell = headerRow.insertCell();
+                    cell.textContent = col;
+                });
+
+                const body = table.createTBody();
+                data.forEach(record => {
+                    const row = body.insertRow();
+                    record.forEach((field, index) => {
+                        const cell = row.insertCell();
+
+                        if (index === 8) {
+                            const preview = document.createElement('div');
+                            preview.classList.add('text-preview');
+                            preview.textContent = field.slice(0, 50) + '...';
+                            cell.appendChild(preview);
+
+                            const readMoreLink = document.createElement('a');
+                            readMoreLink.href = `/full-text/${record[0]}`;
+                            readMoreLink.textContent = 'Read More';
+                            cell.appendChild(readMoreLink);
+                        } else {
+                            cell.textContent = field;
+                        }
+                    });
+                });
+
+                resultDiv.appendChild(table);
+            } else {
+                resultDiv.innerHTML = `<p>No results found.</p>`;
+            }
+        }
+    </script>
+
+</body>
+</html>
