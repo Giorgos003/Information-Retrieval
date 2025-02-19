@@ -113,6 +113,7 @@ def extract_keywords(text): # Attention! Pass-by value
 
     # Transform it to a dictionary so we can process it more easily
     core_numbers = dict(core_numbers)
+    # print(core_numbers)
 
 
     ############################################################################################################
@@ -120,22 +121,25 @@ def extract_keywords(text): # Attention! Pass-by value
     # σχόλια… Βλέπουμε τι θέλουμε να κάνουμε…
 
     # Sort the core_numbers according the core number of each word
-    # core_numbers = sorted(core_numbers.items(), key=lambda x: x[1], reverse=True)
+    core_numbers = sorted(core_numbers.items(), key=lambda x: x[1], reverse=True)
 
     # Convert the result back to a dictionary
-    # core_numbers = dict(core_numbers)
+    core_numbers = dict(core_numbers)
+    # print(core_numbers)
     ############################################################################################################
 
 
     # Choose the words with core number bigger than 2
     # These are the keywords
     keywords = []
+    cores = []
     for word, core in core_numbers.items():
         if int(core) > 2:   # We choose the 2 by-default
             keywords.append(word)
+            cores.append(core)
 
 
-    return keywords
+    return keywords, cores
 
 
 
@@ -152,6 +156,7 @@ def keyword_extraction_test1(member_of_parliament, party):
     """
     # Path to our database file
     db_path = "all_the_data.db"
+    db_path = 'data.db'
 
     # Connect to the database
     conn = sqlite3.connect(db_path)
@@ -181,7 +186,7 @@ def keyword_extraction_test1(member_of_parliament, party):
     member_of_parliament  = Preprocess_tools.remove_accents(member_of_parliament)
     party = Preprocess_tools.remove_accents(party)
 
-    print(member_of_parliament, party)
+    # print(member_of_parliament, party)
 
     ###################################################################################################################
 
@@ -218,7 +223,7 @@ def keyword_extraction_test1(member_of_parliament, party):
         # In that way we do not store the bunch in the Main Memory but only one line each time
         for row in c:
             # In row[-1] contains the speech. The speech is not preprocessed
-            keywords = extract_keywords(row[-1])
+            keywords, cores = extract_keywords(row[-1])
             if len(keywords) > 0:
                 current_row = pd.DataFrame([{
                     'ID': row[0],
@@ -236,4 +241,87 @@ def keyword_extraction_test1(member_of_parliament, party):
 
     return
 
-keyword_extraction_test1("μητσοτάκης κυριάκου κωνσταντίνος", "")
+def dense_keyword_extraction(member_of_parliament, party):
+    """
+    This function loads from the database the rows that matches with the speech that the user wants to extract
+    keywords from. Every speech that needs keyword extraction is used as input to the extract_keywords function.
+
+    :param member_of_parliament: string, that contains the name of the MP that, from their speeches, we
+        want to extract keywords from
+    :param party: string, that contains the name of the party that we want to extract keywords from
+    :return: nothing
+    """
+    # Path to our database file
+    db_path = "all_the_data.db"
+    db_path = 'data.db'
+
+    # Connect to the database
+    conn = sqlite3.connect(db_path)
+
+    # Create a cursor object to interact with the database
+    c = conn.cursor()
+
+    # Get the list of all tables in the database
+    # There is only one table in our database which of course contains our data in columns
+    # The whole process is described in 'create_db_script.py' file
+    c.execute("SELECT name FROM sqlite_master WHERE type=\'table\';")
+    table_name = c.fetchone()[0]
+
+    # Create indexes to the columns that are part of the query (the inputs of this function) so it
+    # can run significantly faster
+    c.execute(f'CREATE INDEX IF NOT EXISTS idx_member_name ON {table_name} (member_name)')
+    c.execute(f'CREATE INDEX IF NOT EXISTS idx_political_party ON {table_name} (political_party)')
+
+    # Before we run the query, we first preprocess the member_of_parliament & party variables (string) so they do not contain
+    # capital letters & accents
+    # Do not forget that in the database all data except for the speech is already preprocessed
+    # Check the 'create_db_script.py' file
+    member_of_parliament = member_of_parliament.lower()
+    party = party.lower()
+
+    # For the accents removal we use a function from the 'Preprocess_tools.py' file
+    member_of_parliament  = Preprocess_tools.remove_accents(member_of_parliament)
+    party = Preprocess_tools.remove_accents(party)
+
+    # print(member_of_parliament, party)
+
+    ###################################################################################################################
+
+    # Καθώς δε γίνεται ο χρήστης να δίνει πάντα το ακριβές όνομα κάθε πολιτικού, υπάρχει η σκέψη να δέχεται ένα όνομα
+    # και να βρίσκει έναν πολιτικό που περιέχει το όνομα αυτό και να βρίσκει keywords στις δικές του ομιλίες
+
+    ###################################################################################################################
+
+
+    # Fetch all the MPs from the table that have the 'member_of_parliament' name
+    # and are from the 'party' political party
+    # We should take into consideration that one of these strings can be empty
+    if len(member_of_parliament) > 0 and len(party) > 0:
+        c.execute(f'SELECT id, member_name, political_party, sitting_date, speech FROM {table_name} WHERE member_name=\'{member_of_parliament}\' and political_party=\'{party}\';')
+    elif len(member_of_parliament) > 0:
+        c.execute(f'SELECT id, member_name, political_party, sitting_date, speech FROM {table_name} WHERE member_name=\'{member_of_parliament}\';')
+    elif len(party) > 0:
+        c.execute(f'SELECT id, member_name, political_party, sitting_date, speech FROM {table_name} WHERE political_party=\'{party}\';')
+
+
+    
+
+    # Iterate each row of the database
+    # In that way we do not store the bunch in the Main Memory but only one line each time
+    speeches = ""
+    for row in c:
+        # In row[-1] contains the speech. The speech is not preprocessed
+        speeches = speeches + row[-1]
+
+    # Close the connection
+    conn.close()
+
+    keywords, cores = extract_keywords(speeches)
+
+    if cores:
+        num_dense_keywords = cores.count(max(cores))
+        return keywords[:num_dense_keywords]
+    else:
+        return []
+
+dense_keyword_extraction("κασιδιαρης παναγιωτη ηλιας", "")
