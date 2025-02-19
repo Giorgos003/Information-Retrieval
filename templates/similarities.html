@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Top K Politicians</title>
+</head>
+<body>
+    <h1>Top-k Most Similar Politicians</h1>
+
+    <p>
+        Given a parameter k, the k most similar politicians will be presented below<br>
+        with the similarity in the range [0,1]
+    </p>
+
+    <form action="/load_similarities" method="GET">
+        <label for="k">k: </label>
+        <input type="number" id="k" name="k" min="1" required>
+        <button type="submit">Submit</button>
+    </form>
+    <a href="/">Back to Search Results</a>
+
+    {% if tuples %}
+    <h2>Top {{ k }} most similar politicians:</h2>
+    
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Politician 1</th>
+                <th>Politician 2</th>
+                <th>Similarity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tuple in tuples %}
+            <tr>
+                <td>{{ tuple[0] }}</td>
+                <td>{{ tuple[1] }}</td>
+                <td>{{ tuple[2] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+</body>
+</html>

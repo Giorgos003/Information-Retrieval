@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import sqlite3
 from Inverted_Index import InvertedIndex
+import pickle
 
 app = Flask(__name__)
 
@@ -39,6 +40,14 @@ def full_text(id):
 @app.route('/LSA_results.html')
 def lsa_description():
     return render_template('LSA_results.html')
+
+@app.route('/similarities.html')
+def similarities():
+    return render_template('similarities.html')
+
+@app.route('/biggest_speeches.html')
+def biggest_speeches():
+    return render_template('biggest_speeches.html')
 
 
 def get_records(query):
@@ -81,6 +90,28 @@ def get_records(query):
     sorted_results = sorted(results, key=lambda x: id_index[x[0]])
 
     return sorted_results
+
+@app.route('/load_similarities', methods=['GET'])
+def load_similarities():
+    k = request.args.get('k', type=int)
+
+    if k is None or k <= 0:
+        return jsonify({'error': 'Invalid value for k'}), 400
+
+    try:
+        # Load the pickled file
+        with open('parl_members_sims.pkl', 'rb') as file:
+            parl_members_sims = pickle.load(file)
+
+        # Get the first k tuples
+        top_k_tuples = parl_members_sims[:k]
+
+        return render_template('similarities.html', k=k, tuples=top_k_tuples)
+
+    except FileNotFoundError:
+        return jsonify({'error': 'File parl_members_sims.pkl not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

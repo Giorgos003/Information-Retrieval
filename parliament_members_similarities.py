@@ -3,55 +3,55 @@ import pickle
 import sys
 from keyword_extraction_test import dense_keyword_extraction as kx
 
-# Step-1: Load the initial features from db (creates SIMILARITIES.pkl)
+# Step-1: Load the initial features from db (creates parl_members_vecs.pkl)
 #-----------------------------------------
-# conn = sqlite3.connect('data.db')
-# cursor = conn.cursor()
+conn = sqlite3.connect('data.db')
+cursor = conn.cursor()
 
-# data = conn.execute("SELECT DISTINCT member_name, GROUP_CONCAT(DISTINCT political_party), GROUP_CONCAT(DISTINCT member_region), GROUP_CONCAT(DISTINCT roles), GROUP_CONCAT(DISTINCT member_gender)FROM unfiltered_records GROUP BY member_name").fetchall()
+data = conn.execute("SELECT DISTINCT member_name, GROUP_CONCAT(DISTINCT political_party), GROUP_CONCAT(DISTINCT member_region), GROUP_CONCAT(DISTINCT roles), GROUP_CONCAT(DISTINCT member_gender)FROM unfiltered_records GROUP BY member_name").fetchall()
 
-# members = [list(row) for row in data]
+members = [list(row) for row in data]
 
-# with open("SIMILARITIES.pkl", "wb") as file:
-#     pickle.dump(members, file)
+with open("parl_members_vecs.pkl", "wb") as file:
+    pickle.dump(members, file)
 
 
 # Step-2: Preprocess and adding a feature for keywords (creates parl_members_vecs.pkl)
 #-----------------------------------------
-# with open("SIMILARITIES.pkl", "rb") as file:
-#     members = pickle.load(file)
+with open("parl_members_vecs.pkl", "rb") as file:
+    members = pickle.load(file)
 
-# for i in range(len(members)):
-#     member_name = members[i][0]
-#     print(member_name)
+for i in range(len(members)):
+    member_name = members[i][0]
+    print(member_name)
 
-#     parties = members[i][1].split(",")
-#     members[i][1] = parties
+    parties = members[i][1].split(",")
+    members[i][1] = parties
 
-#     regions = members[i][2].split(",") if members[i][2] else []
-#     members[i][2] = regions
+    regions = members[i][2].split(",") if members[i][2] else []
+    members[i][2] = regions
 
-#     # Extracting irrelevant characters from the roles
-#     roles = members[i][3].replace("[","").replace("]","").replace("'","").replace('"',"")
-#     roles = roles.split(",")
-#     members[i][3] = roles
+    # Extracting irrelevant characters from the roles
+    roles = members[i][3].replace("[","").replace("]","").replace("'","").replace('"',"")
+    roles = roles.split(",")
+    members[i][3] = roles
 
-#     # Encoding gender as 0 or 1 to make it easier to compare
-#     gender = 1 if members[i][4] == 'female' else 0
-#     members[i][4] = gender
+    # Encoding gender as 0 or 1 to make it easier to compare
+    gender = 1 if members[i][4] == 'female' else 0
+    members[i][4] = gender
 
-#     # Saving the surname of the members in a different field
-#     # for easier comparisons between members
-#     tokenized_name = members[i][0].split(" ")
+    # Saving the surname of the members in a different field
+    # for easier comparisons between members
+    tokenized_name = members[i][0].split(" ")
 
-#     surname = tokenized_name[0] if len(tokenized_name) == 3 else tokenized_name[1]
-#     members[i].insert(1,surname)
+    surname = tokenized_name[0] if len(tokenized_name) == 3 else tokenized_name[1]
+    members[i].insert(1,surname)
 
 
-#     members[i].append(kx(member_name, ""))
+    members[i].append(kx(member_name, ""))
 
-# with open("parl_members_vecs.pkl", "wb") as file:
-#     pickle.dump(members, file)
+with open("parl_members_vecs.pkl", "wb") as file:
+    pickle.dump(members, file)
 
 
 # Step-3: Calculate the similarities 
@@ -91,14 +91,13 @@ for m1 in members:
 
 
         # Calculate the weighted similarity between 2 politicians
-        sims.append( (m1[1],m2[1], (surname_similarity*2 + parties_similarity*3 + regions_similarity*1 + roles_similarity*2 + gender_similarity*1 + keywords_similarity*3)/12 ) )
+        sims.append( (m1[0],m2[0], (surname_similarity*2 + parties_similarity*3 + regions_similarity*1 + roles_similarity*2 + gender_similarity*1 + keywords_similarity*3)/12 ) )
 
-print(len(sims))
-sorted_sims = sorted(sims, key=lambda x:x[2], reverse=False)
 
-for i, duet in enumerate(sorted_sims):
-    if i == 1000:
-        break
+sorted_sims = sorted(sims, key=lambda x:x[2], reverse=True)
 
-    print(duet)
+with open("parl_members_sims.pkl", "wb") as file:
+    pickle.dump(sorted_sims, file)
+
+
         
