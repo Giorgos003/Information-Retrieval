@@ -13,10 +13,9 @@ import spacy
 
 
 class InvertedIndex:
-    def __init__(self, temp_dir=None):
+    def __init__(self):
         """
         Initialize the inverted index.
-        :param temp_dir: Directory to store temporary files. Defaults to system temp directory.
         """
 
         # In-memory index: stores term -> {'doc_ids': {doc_id: term_freq}}
@@ -189,7 +188,6 @@ class InvertedIndex:
         Save the inverted index to a file.
         :param file_path: Path to save the index.
         """
-        print(f"TEST {self.index}")
 
         try:
             with open(file_path, 'wb') as f:
@@ -205,6 +203,5 @@ class InvertedIndex:
         with open(file_path, 'rb') as f:
             obj = pickle.load(f)
 
-        print(f"TEST {obj.index}")
         
         return obj
