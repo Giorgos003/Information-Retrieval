@@ -1,7 +1,7 @@
 import sqlite3
 import pickle
 import sys
-from keyword_extraction_test import dense_keyword_extraction as kx
+from keyword_extraction import dense_keyword_extraction as kx
 
 # Step-1: Load the initial features from db (creates parl_members_vecs.pkl)
 #-----------------------------------------

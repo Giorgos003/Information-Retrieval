@@ -1,7 +1,7 @@
 import sqlite3
 import pickle
 import sys
-from keyword_extraction_test import dense_keyword_extraction as kx
+from keyword_extraction import dense_keyword_extraction as kx
 
 def find_id_ranges():
     pass

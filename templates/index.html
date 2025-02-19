@@ -22,11 +22,27 @@
         th {
             background-color: #f2f2f2;
         }
-        .text-preview{
+
+        .text-preview {
             width: 200px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        /* Add style for the new button to make sure it's visible */
+        button {
+            padding: 10px 15px;
+            margin: 10px 0;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
@@ -36,16 +52,22 @@
     <input type="text" id="search-bar" placeholder="Enter your search" onkeydown="checkEnter(event)">
     <button onclick="submitQuery()">Search</button>
 
+    <!-- New button that should now be visible and functional -->
+    <button onclick="window.location.href='/LSA_results.html'">Go to LSA description</button>
+
+    <button onclick="window.location.href='/similarities.html'">Go to Member Similarities</button>
+
+    <button onclick="window.location.href='/biggest_speeches.html'">Go to Biggest speeches</button>
+
     <div id="results"></div>
 
     <script>
         function checkEnter(event) {
-            // Check if the pressed key is Enter (keyCode 13)
             if (event.keyCode === 13) {
-                submitQuery();  // Call the submitQuery function when Enter is pressed
+                submitQuery();
             }
         }
-        
+
         function submitQuery() {
             const query = document.getElementById('search-bar').value;
             if (!query) {
@@ -65,51 +87,40 @@
 
         function displayResults(data) {
             const resultDiv = document.getElementById('results');
-            resultDiv.innerHTML = '';  // Clear previous results
+            resultDiv.innerHTML = '';
 
             if (data.error) {
                 resultDiv.innerHTML = `<p>Error: ${data.error}</p>`;
             } else if (data.length > 0) {
                 const table = document.createElement('table');
-                table.setAttribute('border', '1');  // Optional: Add a border to the table
+                table.setAttribute('border', '1');
 
-                // Create the table header
                 const header = table.createTHead();
                 const headerRow = header.insertRow();
-                const columns = ["id",
-                                "member_name",
-                                "sitting_date",
-                                "political_party",
-                                "government",
-                                "member_region",
-                                "roles",
-                                "member_gender",
-                                "speech"];  // Replace with actual column names
+                const columns = ["id", "member_name", "sitting_date", "political_party", "government", "member_region", "roles", "member_gender", "speech"];
                 columns.forEach(col => {
                     const cell = headerRow.insertCell();
                     cell.textContent = col;
                 });
 
-                // Create the table body
                 const body = table.createTBody();
                 data.forEach(record => {
                     const row = body.insertRow();
                     record.forEach((field, index) => {
                         const cell = row.insertCell();
-                        
-                        if (index === 8) {  // If this is the speech column (adjust the index based on the actual position)
+
+                        if (index === 8) {
                             const preview = document.createElement('div');
                             preview.classList.add('text-preview');
-                            preview.textContent = field.slice(0, 50) + '...';  // Truncate the text (adjust the 100 as needed)
+                            preview.textContent = field.slice(0, 50) + '...';
                             cell.appendChild(preview);
-                            
-                            // Add "Read More" link
+
                             const readMoreLink = document.createElement('a');
-                            readMoreLink.href = `/full-text/${record[0]}`;  // Link to the full text (adjust URL route as needed)
+                            readMoreLink.href = `/full-text/${record[0]}`;
                             readMoreLink.textContent = 'Read More';
                             cell.appendChild(readMoreLink);
                         } else {
-                            cell.textContent = field;  // Add other fields normally
+                            cell.textContent = field;
                         }
                     });
                 });

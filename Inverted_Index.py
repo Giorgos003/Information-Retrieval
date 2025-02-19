@@ -9,7 +9,6 @@ import sqlite3
 import sys
 import heapq
 import time
-import spacy
 
 
 class InvertedIndex:
@@ -108,39 +107,11 @@ class InvertedIndex:
             temp.append(tools.basic_stemmer(term))
         query_terms = temp
 
-        # # Update catalog and precompute useful values
-        # self.num_of_docs += 1
-        # query_id = self.num_of_docs     
-
-        # # MAYBE OPTIONAL
-        # for term in query_terms:
-        #     self.update_catalog(term, query_id)
 
 
         query_set = set(query_terms)
 
-        # Filter terms with low idf values
-        # threshold = tools.IDF(n=self.num_of_docs/2 , N=self.num_of_docs)
 
-        # max_idf = 0
-        # max_term = None
-
-        # temp_set = query_set.copy()
-        # for term in query_set:
-        #     idf = tools.IDF(len(self.index[term]) , self.num_of_docs)
-
-        #     if idf > max_idf:
-        #         max_idf = idf
-        #         max_term = term
-
-        #     if idf < threshold:
-        #         temp_set.remove(term)
-
-        # # Handle queries with only frequent terms
-        # if not temp_set:
-        #     temp_set.add(max_term)
-
-        # query_set = temp_set
         
 
         print(f"query set reduced to {query_set}")

@@ -2,8 +2,7 @@ import math
 import pandas as pd
 import unicodedata
 import string
-from nltk.stem.snowball import SnowballStemmer
-from greek_stemmer import GreekStemmer
+
 
 
 stopwords = {'η', 'κατ', 'ουδεμια', 'τι', 'μη', 'μου', 'οχιναι', 'ενω', 'εκ', 'εκεινους', 'οσ', 'βεβαιως',

@@ -15,7 +15,7 @@ import Preprocess_tools as tools
 
 
 
-from test_main import inverted_index
+from main import inverted_index
 
 
 def find_optimal_k(term_doc_matrix, energy_threshold=0.9):
